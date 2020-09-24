@@ -2,6 +2,8 @@
 
 ## 0. Prérequis
 
+Machine 2 et un clone de Machine 1
+
 - partitionnement
 
   ajouter un deuxième disque de 5Go à la machine
@@ -25,7 +27,19 @@
   Machine 2
 
   ```bash
-
+  [serv@node2 ~]$ lsblk
+  NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+  sda               8:0    0    8G  0 disk
+  ├─sda1            8:1    0    1G  0 part /boot
+  └─sda2            8:2    0    7G  0 part
+  ├─centos-root 253:0    0  6.2G  0 lvm  /
+  └─centos-swap 253:1    0  820M  0 lvm  [SWAP]
+  sdb               8:16   0    5G  0 disk
+  ├─data-vol1     253:2    0    2G  0 lvm  /srv/site1
+  └─data-vol2     253:3    0    3G  0 lvm  /srv/site2
+  sr0              11:0    1 1024M  0 rom
+  sr1              11:1    1 1024M  0 rom
+  [serv@node2 ~]$
   ```
 
 - partitionner le nouveau disque avec LVM
@@ -179,39 +193,7 @@
   - currently set to     8192
   Block device           253:3
 
-  --- Logical volume ---
-  LV Path                /dev/centos/swap
-  LV Name                swap
-  VG Name                centos
-  LV UUID                Ir0ROd-BWc9-wlmg-axDr-UNCf-591M-Y5l5HP
-  LV Write Access        read/write
-  LV Creation host, time localhost, 2020-01-30 12:00:37 +0100
-  LV Status              available
-  # open                 2
-  LV Size                820.00 MiB
-  Current LE             205
-  Segments               1
-  Allocation             inherit
-  Read ahead sectors     auto
-  - currently set to     8192
-  Block device           253:1
-
-  --- Logical volume ---
-  LV Path                /dev/centos/root
-  LV Name                root
-  VG Name                centos
-  LV UUID                ZIvBAS-Y7Qx-5AK1-3WdU-VNEV-9073-hBiWDD
-  LV Write Access        read/write
-  LV Creation host, time localhost, 2020-01-30 12:00:38 +0100
-  LV Status              available
-  # open                 1
-  LV Size                <6.20 GiB
-  Current LE             1586
-  Segments               1
-  Allocation             inherit
-  Read ahead sectors     auto
-  - currently set to     8192
-  Block device           253:0
+  [...]
   [serv@node1 ~]\$
   ```
 
@@ -303,12 +285,6 @@
   [serv@node1 ~]$
   ```
 
-  Machine 2
-
-  ```bash
-
-  ```
-
   la partition de 3Go sera montée sur /srv/site2
 
   Machine 1
@@ -343,7 +319,18 @@
   Machine 2
 
   ```bash
-
+  [serv@node2 ~]$ df -h
+  Filesystem               Size  Used Avail Use% Mounted on
+  devtmpfs                 232M     0  232M   0% /dev
+  tmpfs                    244M     0  244M   0% /dev/shm
+  tmpfs                    244M  4.6M  239M   2% /run
+  tmpfs                    244M     0  244M   0% /sys/fs/cgroup
+  /dev/mapper/centos-root  6.2G  1.6G  4.7G  25% /
+  /dev/sda1               1014M  197M  818M  20% /boot
+  /dev/mapper/data-vol2    2.9G  8.8M  2.7G   1% /srv/site2
+  /dev/mapper/data-vol1    2.0G  6.0M  1.8G   1% /srv/site1
+  tmpfs                     49M     0   49M   0% /run/user/1002
+  [serv@node2 ~]$
   ```
 
   les partitions doivent être montées automatiquement au démarrage (fichier /etc/fstab)
@@ -372,6 +359,13 @@
   Machine 2
 
   ```bash
+  [serv@node2 ~]$ sudo mount -av
+  /                        : ignored
+  /boot                    : already mounted
+  swap                     : ignored
+  /srv/site1               : already mounted
+  /srv/site2               : already mounted
+  [serv@node2 ~]$
 
   ```
 
@@ -382,55 +376,88 @@
   Machine 1
 
   ```bash
+  [serv@node1 ~]$ dig google.com
 
+  ; <<>> DiG 9.11.4-P2-RedHat-9.11.4-16.P2.el7_8.6 <<>> google.com
+  ;; global options: +cmd
+  ;; Got answer:
+  ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 12529
+  ;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+
+  ;; OPT PSEUDOSECTION:
+  ; EDNS: version: 0, flags:; udp: 4096
+  ;; QUESTION SECTION:
+  ;google.com. IN A
+
+  ;; ANSWER SECTION:
+  google.com. 149 IN A 172.217.22.142
+
+  ;; Query time: 3 msec
+  ;; SERVER: 10.33.10.148#53(10.33.10.148)
+  ;; WHEN: Thu Sep 24 15:25:25 CEST 2020
+  ;; MSG SIZE rcvd: 55
+
+  [serv@node1 ~]\$
   ```
 
   Machine 2
 
   ```bash
+  [serv@node2 ~]$ dig google.com
 
+  ; <<>> DiG 9.11.4-P2-RedHat-9.11.4-16.P2.el7_8.6 <<>> google.com
+  ;; global options: +cmd
+  ;; Got answer:
+  ;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 33235
+  ;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+
+  ;; OPT PSEUDOSECTION:
+  ; EDNS: version: 0, flags:; udp: 4096
+  ;; QUESTION SECTION:
+  ;google.com.                    IN      A
+
+  ;; ANSWER SECTION:
+  google.com.             29      IN      A       172.217.22.142
+
+  ;; Query time: 5 msec
+  ;; SERVER: 10.33.10.148#53(10.33.10.148)
+  ;; WHEN: Thu Sep 24 15:27:26 CEST 2020
+  ;; MSG SIZE  rcvd: 55
+
+  [serv@node2 ~]$
   ```
 
-  route par défaut
+- un accès à un réseau local (les deux machines peuvent se ping)
 
   Machine 1
 
   ```bash
-
+  [serv@node1 ~]$ ping node2.tp1.b2
+  PING node2.tp1.b2 (192.168.1.12) 56(84) bytes of data.
+  64 bytes from node2.tp1.b2 (192.168.1.12): icmp_seq=1 ttl=64 time=1.27 ms
+  64 bytes from node2.tp1.b2 (192.168.1.12): icmp_seq=2 ttl=64 time=1.04 ms
+  64 bytes from node2.tp1.b2 (192.168.1.12): icmp_seq=3 ttl=64 time=1.02 ms
+  64 bytes from node2.tp1.b2 (192.168.1.12): icmp_seq=4 ttl=64 time=0.957 ms
+  ^C
+  --- node2.tp1.b2 ping statistics ---
+  4 packets transmitted, 4 received, 0% packet loss, time 3006ms
+  rtt min/avg/max/mdev = 0.957/1.074/1.274/0.123 ms
+  [serv@node1 ~]$
   ```
 
   Machine 2
 
   ```bash
-
-  ```
-
-  un accès à un réseau local (les deux machines peuvent se ping)
-
-  Machine 1
-
-  ```bash
-
-  ```
-
-  Machine 2
-
-  ```bash
-
-  ```
-
-  carte réseau dédiée
-
-  Machine 1
-
-  ```bash
-
-  ```
-
-  Machine 2
-
-  ```bash
-
+  [serv@node2 ~]$ ping node1.tp1.b2
+  PING node1.tp1.b2 (192.168.1.11) 56(84) bytes of data.
+  64 bytes from node1.tp1.b2 (192.168.1.11): icmp_seq=1 ttl=64 time=0.692 ms
+  64 bytes from node1.tp1.b2 (192.168.1.11): icmp_seq=2 ttl=64 time=0.866 ms
+  64 bytes from node1.tp1.b2 (192.168.1.11): icmp_seq=3 ttl=64 time=0.823 ms
+  ^C
+  --- node1.tp1.b2 ping statistics ---
+  3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+  rtt min/avg/max/mdev = 0.692/0.793/0.866/0.080 ms
+  [serv@node2 ~]$
   ```
 
   route locale
@@ -438,13 +465,21 @@
   Machine 1
 
   ```bash
-
+  [serv@node1 ~]$ ip n s
+  10.0.2.2 dev enp0s3 lladdr 52:54:00:12:35:02 STALE
+  192.168.1.12 dev enp0s8 lladdr 08:00:27:ff:c0:3f STALE
+  192.168.1.10 dev enp0s8 lladdr 0a:00:27:00:00:08 DELAY
+  [serv@node1 ~]$
   ```
 
   Machine 2
 
   ```bash
-
+  [serv@node2 ~]$ ip n s
+  192.168.1.11 dev enp0s8 lladdr 08:00:27:6a:f6:46 STALE
+  10.0.2.2 dev enp0s3 lladdr 52:54:00:12:35:02 STALE
+  192.168.1.10 dev enp0s8 lladdr 0a:00:27:00:00:08 DELAY
+  [serv@node2 ~]$
   ```
 
 - les machines doivent avoir un nom
@@ -462,7 +497,9 @@
   Machine 2
 
   ```bash
-
+  [serv@node2 ~]$ hostname
+  node2.tp1.b2
+  [serv@node2 ~]$
   ```
 
   les machines doivent pouvoir se joindre par leurs noms respectifs
@@ -470,30 +507,57 @@
   Machine 1
 
   ```bash
-
+  [serv@node1 ~]$ ping node2.tp1.b2
+  PING node2.tp1.b2 (192.168.1.12) 56(84) bytes of data.
+  64 bytes from node2.tp1.b2 (192.168.1.12): icmp_seq=1 ttl=64 time=1.27 ms
+  64 bytes from node2.tp1.b2 (192.168.1.12): icmp_seq=2 ttl=64 time=1.04 ms
+  64 bytes from node2.tp1.b2 (192.168.1.12): icmp_seq=3 ttl=64 time=1.02 ms
+  64 bytes from node2.tp1.b2 (192.168.1.12): icmp_seq=4 ttl=64 time=0.957 ms
+  ^C
+  --- node2.tp1.b2 ping statistics ---
+  4 packets transmitted, 4 received, 0% packet loss, time 3006ms
+  rtt min/avg/max/mdev = 0.957/1.074/1.274/0.123 ms
+  [serv@node1 ~]$
   ```
 
   Machine 2
 
   ```bash
-
+  [serv@node2 ~]$ ping node1.tp1.b2
+  PING node1.tp1.b2 (192.168.1.11) 56(84) bytes of data.
+  64 bytes from node1.tp1.b2 (192.168.1.11): icmp_seq=1 ttl=64 time=0.692 ms
+  64 bytes from node1.tp1.b2 (192.168.1.11): icmp_seq=2 ttl=64 time=0.866 ms
+  64 bytes from node1.tp1.b2 (192.168.1.11): icmp_seq=3 ttl=64 time=0.823 ms
+  ^C
+  --- node1.tp1.b2 ping statistics ---
+  3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+  rtt min/avg/max/mdev = 0.692/0.793/0.866/0.080 ms
+  [serv@node2 ~]$
   ```
 
-  fichier /etc/hosts
+- fichier /etc/hosts
 
   Machine 1
 
   ```bash
-
+  [serv@node1 ~]$ cat /etc/hosts
+  127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+  ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+  192.168.1.12  node2.tp1.b2
+  [serv@node1 ~]$
   ```
 
   Machine 2
 
   ```bash
-
+  [serv@node2 ~]$ cat /etc/hosts
+  127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+  ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+  192.168.1.11  node1.tp1.b2
+  [serv@node2 ~]$
   ```
 
-- un utilisateur administrateur est créé sur les deux machines (il peut exécuter des commandes sudo en tant que root)
+  un utilisateur administrateur est créé sur les deux machines (il peut exécuter des commandes sudo en tant que root)
 
   création d'un user
 
@@ -501,12 +565,6 @@
 
   ```bash
   [root@node1 ~]# useradd serv
-  ```
-
-  Machine 2
-
-  ```bash
-
   ```
 
   modification de la conf sudo
@@ -526,31 +584,127 @@
   Machine 2
 
   ```bash
-
+  [root@node2 ~]# visudo
   ```
 
   ```bash
-
+  ## Allow root to run any commands anywhere
+  root    ALL=(ALL)       ALL
+  serv    ALL=(ALL)       ALL
   ```
 
 - vous n'utilisez QUE ssh pour administrer les machines
 
   création d'une paire de clés (sur VOTRE PC)
 
-  ```bash
-
+  ```powershell
+  PS C:\Users\arthu\.ssh> cat .\known_hosts
+  192.168.1.11 ecdsa-sha2-nistp256 [...]=
+  192.168.1.12 ecdsa-sha2-nistp256 [...]=
   ```
 
   déposer la clé publique sur l'utilisateur de destination
 
-  ```bash
+  Machine 1
 
+  ```bash
+  PS C:\Users\arthu> ssh serv@192.168.1.11
+  serv@192.168.1.11's password:
+  Last login: Thu Sep 24 14:10:21 2020 from 192.168.1.10
+  Last login: Thu Sep 24 14:10:21 2020 from 192.168.1.10
+  [serv@node1 ~]$
+  ```
+
+  Machine 2
+
+  ```bash
+  PS C:\Users\arthu> ssh serv@192.168.1.12
+  serv@192.168.1.12's password:
+  Last login: Thu Sep 24 15:09:52 2020 from 192.168.1.10
+  Last login: Thu Sep 24 15:09:52 2020 from 192.168.1.10
+  [serv@node2 ~]$
   ```
 
 - le pare-feu est configuré pour bloquer toutes les connexions exceptées celles qui sont nécessaires
 
   commande firewall-cmd ou iptables
 
-  ```bash
+  Machine 1
 
+  ```bash
+  [serv@node1 ~]$ sudo firewall-cmd --list-all
+  Authorization failed.
+    Make sure polkit agent is running or run the application as superuser.
+
+  [serv@node1 ~]$ sudo !!
+  sudo firewall-cmd --list-all
+  public (active)
+  target: default
+  icmp-block-inversion: no
+  interfaces: enp0s3 enp0s8
+  sources:
+  services: dhcpv6-client ssh
+  ports:
+  protocols:
+  masquerade: no
+  forward-ports:
+  source-ports:
+  icmp-blocks:
+  rich rules:
+  [serv@node1 ~]\$
+  ```
+
+  Machine 2
+
+  ```bash
+  [serv@node2 ~]$ sudo firewall-cmd --list-all
+  [sudo] password for serv:
+  public (active)
+  target: default
+  icmp-block-inversion: no
+  interfaces: enp0s3 enp0s8
+  sources:
+  services: dhcpv6-client ssh
+  ports:
+  protocols:
+  masquerade: no
+  forward-ports:
+  source-ports:
+  icmp-blocks:
+  rich rules:
+  [serv@node2 ~]\$
+  ```
+
+- désactiver SELinux
+
+  Machine 1
+
+  ```bash
+  [serv@node1 ~]$ sestatus
+  SELinux status:                 enabled
+  SELinuxfs mount:                /sys/fs/selinux
+  SELinux root directory:         /etc/selinux
+  Loaded policy name:             targeted
+  Current mode:                   permissive
+  Mode from config file:          permissive
+  Policy MLS status:              enabled
+  Policy deny_unknown status:     allowed
+  Max kernel policy version:      31
+  [serv@node1 ~]$
+  ```
+
+  Machine 2
+
+  ```bash
+  [serv@node2 ~]$ sestatus
+  SELinux status:                 enabled
+  SELinuxfs mount:                /sys/fs/selinux
+  SELinux root directory:         /etc/selinux
+  Loaded policy name:             targeted
+  Current mode:                   permissive
+  Mode from config file:          permissive
+  Policy MLS status:              enabled
+  Policy deny_unknown status:     allowed
+  Max kernel policy version:      31
+  [serv@node2 ~]$
   ```
