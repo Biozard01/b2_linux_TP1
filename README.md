@@ -708,3 +708,98 @@ Machine 2 et un clone de Machine 1
   Max kernel policy version:      31
   [serv@node2 ~]$
   ```
+
+## I. Setup serveur Web
+
+- Installer le serveur web NGINX sur node1.tp1.b2 (avec une commande yum install).
+
+  ```bash
+  [serv@node1 ~]$sudo yum install epel-release
+  [...]
+  Complete!
+
+  [serv@node1 ~]$sudo yum install nginx
+  [...]
+  Complete!
+  ```
+
+- NGINX servent deux sites web, chacun possède un fichier unique index.html
+
+  ```bash
+  [serv@node1 ~]$ cat /etc/nginx/nginx.conf
+  worker_processes 1;
+  error_log nginx_error.log;
+  events {
+        worker_connections 1024;
+  }
+  http {
+        server {
+                listen 80;
+                server_name node1.tp1.b2;
+
+                location /site1 {
+                        alias /srv/site1;
+                }
+
+                location /site2 {
+                        alias /srv/site2;
+                }
+        }
+  }
+
+  [serv@node1 ~]\$
+  ```
+
+- les sites web doivent se trouver dans /srv/site1 et /srv/site2
+
+  ```bash
+    [serv@node1 srv]$ sudo tree
+    .
+    ├── site1
+    │   ├── index.html
+    │   └── lost+found
+    └── site2
+      ├── index.html
+      └── lost+found
+
+    4 directories, 2 files
+    [serv@node1 srv]\$
+  ```
+
+- les permissions sur ces dossiers doivent être le plus restrictif possible et, ces dossiers doivent appartenir à un utilisateur et un groupe spécifique
+
+  ```bash
+  [serv@node1 ~]$ sudo ls -al /srv/
+  total 8
+  drwxr-xr-x.  4 root root   32 Sep 23 17:31 .
+  dr-xr-xr-x. 17 root root  237 Sep 22 14:21 ..
+  dr--------.  3 web  web  4096 Sep 24 15:39 site1
+  dr--------.  3 web  web  4096 Sep 24 15:39 site2
+  [serv@node1 ~]
+  ```
+
+- NGINX doit utiliser un utilisateur dédié que vous avez créé à cet effet
+
+  ```bash
+
+  ```
+
+- les sites doivent être servis en HTTPS sur le port 443 et en HTTP sur le port 80
+
+  ```bash
+  [serv@node1 ~]$ sudo firewall-cmd --zone=public --add-port=443/tcp --permanent
+  success
+
+  [serv@node1 ~]$ sudo firewall-cmd --permanent --zone=public --add-service=https
+  success
+
+  [serv@node1 ~]$ sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
+  success
+
+  [serv@node1 ~]$ sudo firewall-cmd --permanent --zone=public --add-service=http
+  success
+
+  [serv@node1 ~]$ sudo firewall-cmd --reload
+  success
+  [serv@node1 ~]$
+  ```
