@@ -723,12 +723,13 @@ Machine 2 et un clone de Machine 1
   Complete!
   ```
 
-- NGINX servent deux sites web, chacun possède un fichier unique index.html
+- NGINX servent deux sites web, chacun possède un fichier unique index.html, NGINX doit utiliser un utilisateur dédié que vous avez créé à cet effet
 
   ```bash
   [serv@node1 ~]$ cat /etc/nginx/nginx.conf
   worker_processes 1;
   error_log nginx_error.log;
+  user web;
   events {
         worker_connections 1024;
   }
@@ -781,7 +782,7 @@ Machine 2 et un clone de Machine 1
 - NGINX doit utiliser un utilisateur dédié que vous avez créé à cet effet
 
   ```bash
-
+  [serv@node1 ~]$ sudo useradd web
   ```
 
 - les sites doivent être servis en HTTPS sur le port 443 et en HTTP sur le port 80
@@ -802,4 +803,10 @@ Machine 2 et un clone de Machine 1
   [serv@node1 ~]$ sudo firewall-cmd --reload
   success
   [serv@node1 ~]$
+  ```
+
+- Prouver que la machine node2 peut joindre les deux sites web.
+
+  ```bash
+
   ```
