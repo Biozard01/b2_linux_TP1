@@ -729,7 +729,6 @@ Machine 2 et un clone de Machine 1
   [serv@node1 ~]$ cat /etc/nginx/nginx.conf
   worker_processes 1;
   error_log nginx_error.log;
-  user web;
   events {
         worker_connections 1024;
   }
@@ -826,15 +825,16 @@ saved_folder="${saved_folder_path##*/}"
 
 backup_name="${saved_folder}_${backup_time}"
 
-moved_file="${saved_folder_path}/*"
+tar -czf $backup_name.tar.gz --absolute-names $saved_folder_path
 
-echo $moved_file
+nbr_site1=`ls -l | grep -c site1_`
+nbr_site2=`ls -l | grep -c site2_`
 
-tar -czf $backup_name.tar.gz $moved_file
+echo $nbr_site1
+echo $nbr_site2
 
-# export nombreSave=`ls -l | grep -c /home/backup/site1- /home/backup/site2-`
-# if [[ $nombreSave < 7 ]]
-#   then
-#       find . -mmin +60 -exec rm -f {} \;
-# fi
+if [ "$nbr_site1" > 7 ] || [ "$nbr_site2" > 7 ]; then
+        echo "ça marche"
+
+fi
 ```
