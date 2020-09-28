@@ -808,6 +808,12 @@ Machine 2 et un clone de Machine 1
   [serv@node1 ~]$
   ```
 
+- Faire en sorte que les sites soient disponibles en HTTPS
+
+  ```bash
+
+  ```
+
 - Prouver que la machine node2 peut joindre les deux sites web.
 
   Site 1
@@ -873,9 +879,13 @@ Machine 2 et un clone de Machine 1
 ```bash
 #!/bin/bash
 
+# LAFOREST Arthur
+# 27/09/2020
+# Backup script
+
 backup_time=$(date +%Y%m%d_%H%M)
 
-saved_folder_path=${1}
+saved_folder_path="${1}"
 
 saved_folder="${saved_folder_path##*/}"
 
