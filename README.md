@@ -914,6 +914,6 @@ fi
 
   ```bash
   [serv@node1 ~]$ cat /etc/netdata/health_alarm_notify.conf
-  https://discordapp.com/api/webhooks/760166157487046696/KV_uChPKmhRNrsCwAmyXL-xWRztM7295hj7goYYdAtVpcjb9I83K_ig9hCxztxMzPbYJ
+  https://discordapp.com/api/webhooks/[...]
   [serv@node1 ~]$
   ```
