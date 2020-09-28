@@ -896,11 +896,24 @@ tar -czf $backup_name.tar.gz --absolute-names $saved_folder_path
 nbr_site1=`ls -l | grep -c site1_`
 nbr_site2=`ls -l | grep -c site2_`
 
-echo $nbr_site1
-echo $nbr_site2
-
 if [ "$nbr_site1" > 7 ]; then
         echo "ça marche"
 
 fi
 ```
+
+## III. Monitoring, alerting
+
+- Mettre en place l'outil Netdata en suivant les instructions officielles et s'assurer de son bon fonctionnement.
+
+  ```bash
+  [serv@node1 ~]$ bash <(curl -Ss https://my-netdata.io/kickstart.sh)
+  ```
+
+- Configurer Netdata pour qu'ils vous envoient des alertes dans un salon Discord dédié
+
+  ```bash
+  [serv@node1 ~]$ cat /etc/netdata/health_alarm_notify.conf
+  https://discordapp.com/api/webhooks/760166157487046696/KV_uChPKmhRNrsCwAmyXL-xWRztM7295hj7goYYdAtVpcjb9I83K_ig9hCxztxMzPbYJ
+  [serv@node1 ~]$
+  ```
