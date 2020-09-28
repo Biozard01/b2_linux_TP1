@@ -637,14 +637,13 @@ Machine 2 et un clone de Machine 1
     Make sure polkit agent is running or run the application as superuser.
 
   [serv@node1 ~]$ sudo !!
-  sudo firewall-cmd --list-all
   public (active)
   target: default
   icmp-block-inversion: no
   interfaces: enp0s3 enp0s8
   sources:
-  services: dhcpv6-client ssh
-  ports:
+  services: dhcpv6-client http https ssh
+  ports: 443/tcp 80/tcp
   protocols:
   masquerade: no
   forward-ports:
@@ -664,14 +663,15 @@ Machine 2 et un clone de Machine 1
   icmp-block-inversion: no
   interfaces: enp0s3 enp0s8
   sources:
-  services: dhcpv6-client ssh
-  ports:
+  services: dhcpv6-client http https ssh
+  ports: 443/tcp 80/tcp
   protocols:
   masquerade: no
   forward-ports:
   source-ports:
   icmp-blocks:
   rich rules:
+
   [serv@node2 ~]\$
   ```
 
@@ -728,25 +728,29 @@ Machine 2 et un clone de Machine 1
   ```bash
   [serv@node1 ~]$ cat /etc/nginx/nginx.conf
   worker_processes 1;
-  error_log nginx_error.log;
+  error_log error_site.log;
+  pid /run/nginx.pid;
   events {
         worker_connections 1024;
   }
+
+  user web;
+
   http {
-        server {
-                listen 80;
-                server_name node1.tp1.b2;
+  server {
+  listen 80;
+  server_name node1.tp1.b2;
 
-                location /site1 {
-                        alias /srv/site1;
-                }
+                  location /site1 {
+                          alias /srv/site1;
+                  }
 
-                location /site2 {
-                        alias /srv/site2;
-                }
-        }
+                  location /site2 {
+                          alias /srv/site2;
+                  }
+          }
+
   }
-
   [serv@node1 ~]\$
   ```
 
@@ -771,10 +775,10 @@ Machine 2 et un clone de Machine 1
   ```bash
   [serv@node1 ~]$ sudo ls -al /srv/
   total 8
-  drwxr-xr-x.  4 root root   32 Sep 23 17:31 .
+  dr-xr-x---.  4 web  web    32 Sep 23 17:31 .
   dr-xr-xr-x. 17 root root  237 Sep 22 14:21 ..
-  dr--------.  3 web  web  4096 Sep 24 15:39 site1
-  dr--------.  3 web  web  4096 Sep 24 15:39 site2
+  dr-xr-xr--.  3 web  web  4096 Sep 24 16:39 site1
+  dr-xr-xr--.  3 web  web  4096 Sep 24 16:40 site2
   [serv@node1 ~]
   ```
 
@@ -806,8 +810,60 @@ Machine 2 et un clone de Machine 1
 
 - Prouver que la machine node2 peut joindre les deux sites web.
 
-  ```bash
+  Site 1
 
+  ```bash
+  [serv@node2 ~]$ curl -Lk http://node1.tp1.b2/site1
+  <!doctype html>
+  <html lang="en">
+  <head>
+          <meta charset="utf-8">
+          <title>Dummy Page</title>
+          [...]
+  </head>
+
+  <body>
+          <div class="pure-g">
+                  <div class="pure-u-1">
+                          <h1>Stay tuned site 1 <h1>
+                          <h2>something new is coming here</h2>
+                          [...]
+                  </div>
+          </div>
+  </body>
+  <script>
+  [...]
+  </script>
+  </html>
+  [serv@node2 ~]$
+  ```
+
+  Site 2
+
+  ```bash
+  [serv@node2 ~]$ curl -Lk http://node1.tp1.b2/site2
+  <!doctype html>
+  <html lang="en">
+  <head>
+          <meta charset="utf-8">
+          <title>Dummy Page</title>
+          [...]
+  </head>
+
+  <body>
+          <div class="pure-g">
+                  <div class="pure-u-1">
+                          <h1>Stay tuned site 2 <h1>
+                          <h2>something new is coming here</h2>
+                          [...]
+                  </div>
+          </div>
+  </body>
+  <script>
+  [...]
+  </script>
+  </html>
+  [serv@node2 ~]$
   ```
 
 ## II. Script de sauvegarde
@@ -833,7 +889,7 @@ nbr_site2=`ls -l | grep -c site2_`
 echo $nbr_site1
 echo $nbr_site2
 
-if [ "$nbr_site1" > 7 ] || [ "$nbr_site2" > 7 ]; then
+if [ "$nbr_site1" > 7 ]; then
         echo "ça marche"
 
 fi
